@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Generador Blaster</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap');
+
+  :root {
+    --bg: #0d0d0d;
+    --surface: #161616;
+    --border: #2a2a2a;
+    --accent: #00e5a0;
+    --blue: #3b82f6;
+    --text: #e8e8e8;
+    --muted: #555;
+    --danger: #ff4455;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'IBM Plex Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2.5rem 1.5rem;
+  }
+
+  .container { width: 100%; max-width: 800px; }
+
+  header { margin-bottom: 2.5rem; }
+
+  .label-tag {
+    display: inline-block;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+    padding: 2px 8px;
+    margin-bottom: 0.75rem;
+  }
+
+  h1 { font-size: 1.8rem; font-weight: 600; letter-spacing: -0.02em; }
+  h1 span { color: var(--accent); }
+  .subtitle { margin-top: 0.4rem; color: var(--muted); font-size: 0.875rem; font-weight: 300; }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1.75rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .section-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1.1rem;
+  }
+
+  /* Drop zone */
+  .dropzone {
+    border: 1.5px dashed var(--border);
+    padding: 2.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .dropzone:hover, .dropzone.drag-over {
+    border-color: var(--accent);
+    background: rgba(0,229,160,0.03);
+  }
+  .dropzone input[type="file"] {
+    position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%;
+  }
+  .drop-icon { font-size: 2rem; margin-bottom: 0.75rem; display: block; }
+  .drop-text { color: var(--muted); font-size: 0.875rem; }
+  .drop-text strong { color: var(--accent); font-weight: 600; }
+  .file-name {
+    margin-top: 1rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.78rem;
+    color: var(--accent);
+    display: none;
+  }
+
+  /* Status */
+  .status {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    padding: 0.65rem 1rem;
+    margin-bottom: 1.25rem;
+    display: none;
+  }
+  .status.error   { background: rgba(255,68,85,0.08); border: 1px solid rgba(255,68,85,0.3); color: var(--danger); }
+  .status.success { background: rgba(0,229,160,0.06); border: 1px solid rgba(0,229,160,0.25); color: var(--accent); }
+
+  /* Sheet blocks */
+  .sheets-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.25rem;
+  }
+
+  .sheet-block {
+    border: 1px solid var(--border);
+    background: var(--bg);
+    padding: 1.25rem;
+  }
+  .sheet-block.active-61384 { border-color: rgba(0,229,160,0.35); }
+  .sheet-block.active-62341 { border-color: rgba(59,130,246,0.35); }
+
+  .sheet-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  .sheet-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 3px 10px;
+  }
+  .badge-61384 { background: rgba(0,229,160,0.12); color: var(--accent); }
+  .badge-62341 { background: rgba(59,130,246,0.12); color: var(--blue); }
+
+  .sheet-stat {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+
+  .sheet-files { margin-bottom: 0.75rem; }
+
+  .file-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.6rem;
+    border: 1px solid var(--border);
+    margin-bottom: 0.4rem;
+    background: var(--surface);
+  }
+
+  .file-item-name {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--text);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .file-item-rows {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.62rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .btn-dl {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.62rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border: none;
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .btn-dl:hover { opacity: 0.8; }
+  .btn-dl-61384 { background: var(--accent); color: #000; }
+  .btn-dl-62341 { background: var(--blue); color: #fff; }
+
+  .preview-toggle {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.63rem;
+    color: var(--muted);
+    cursor: pointer;
+    text-decoration: underline;
+    background: none;
+    border: none;
+    padding: 0;
+    display: none;
+  }
+  .preview-toggle:hover { color: var(--text); }
+
+  .preview-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 0.75rem;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.62rem;
+    color: #999;
+    max-height: 110px;
+    overflow-y: auto;
+    overflow-x: auto;
+    line-height: 1.6;
+    white-space: pre;
+    display: none;
+    margin-top: 0.5rem;
+  }
+
+  .bottom-bar {
+    display: flex;
+    gap: 0.75rem;
+    margin-top: 1.5rem;
+  }
+
+  .btn-reset {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.75rem;
+    padding: 0.65rem 1.2rem;
+    background: transparent;
+    color: var(--muted);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    transition: all 0.15s;
+  }
+  .btn-reset:hover { border-color: var(--muted); color: var(--text); }
+
+  .empty-state {
+    text-align: center;
+    color: var(--muted);
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 0.72rem;
+    padding: 1.25rem 0;
+  }
+
+  .hidden { display: none !important; }
+
+  @media (max-width: 560px) {
+    .sheets-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+  <header>
+    <div class="label-tag">Herramienta</div>
+    <h1>Generador <span>Blaster</span></h1>
+    <p class="subtitle">Genera TXT separados por hoja · delimitado por | · máx. 2,000 filas por archivo</p>
+  </header>
+
+  <div id="status" class="status"></div>
+
+  <!-- Upload -->
+  <div class="card">
+    <div class="section-title">01 — Cargar archivo Excel</div>
+    <div class="dropzone" id="dropzone">
+      <input type="file" id="fileInput" accept=".xlsx,.xls" />
+      <span class="drop-icon">📂</span>
+      <p class="drop-text"><strong>Selecciona o arrastra</strong> tu archivo aquí<br>.xlsx / .xls</p>
+      <div class="file-name" id="fileName"></div>
+    </div>
+  </div>
+
+  <!-- Results -->
+  <div class="card hidden" id="resultsCard">
+    <div class="section-title">02 — Archivos generados</div>
+    <div class="sheets-grid">
+
+      <!-- 61384 -->
+      <div class="sheet-block" id="block61384">
+        <div class="sheet-header">
+          <span class="sheet-badge badge-61384">61384</span>
+          <span class="sheet-stat" id="stat61384">—</span>
+        </div>
+        <div class="sheet-files" id="files61384">
+          <div class="empty-state">No encontrada</div>
+        </div>
+        <button class="preview-toggle" id="toggle61384" onclick="togglePreview('61384')">▶ ver muestra</button>
+        <div class="preview-box" id="preview61384"></div>
+      </div>
+
+      <!-- 62341 -->
+      <div class="sheet-block" id="block62341">
+        <div class="sheet-header">
+          <span class="sheet-badge badge-62341">62341</span>
+          <span class="sheet-stat" id="stat62341">—</span>
+        </div>
+        <div class="sheet-files" id="files62341">
+          <div class="empty-state">No encontrada</div>
+        </div>
+        <button class="preview-toggle" id="toggle62341" onclick="togglePreview('62341')">▶ ver muestra</button>
+        <div class="preview-box" id="preview62341"></div>
+      </div>
+
+    </div>
+
+    <div class="bottom-bar">
+      <button class="btn-reset" id="resetBtn">✕ Limpiar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const MAX_ROWS = 2000;
+  const sheetsData = { '61384': [], '62341': [] };
+
+  const fileInput   = document.getElementById('fileInput');
+  const dropzone    = document.getElementById('dropzone');
+  const fileNameEl  = document.getElementById('fileName');
+  const statusEl    = document.getElementById('status');
+  const resultsCard = document.getElementById('resultsCard');
+
+  dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+  dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+  dropzone.addEventListener('drop', e => {
+    e.preventDefault(); dropzone.classList.remove('drag-over');
+    if (e.dataTransfer.files[0]) processFile(e.dataTransfer.files[0]);
+  });
+  fileInput.addEventListener('change', e => { if (e.target.files[0]) processFile(e.target.files[0]); });
+
+  function showStatus(msg, type) {
+    statusEl.textContent = msg;
+    statusEl.className = `status ${type}`;
+    statusEl.style.display = 'block';
+  }
+
+  function getToday() {
+    const n = new Date();
+    return `${String(n.getDate()).padStart(2,'0')}/${String(n.getMonth()+1).padStart(2,'0')}/${n.getFullYear()}`;
+  }
+
+  function buildLines(rows, sheetId, today) {
+    return rows.map(row => {
+      const c1 = String(row[0] ?? '').trim();
+      if (sheetId === '62341') {
+        return `${c1}|${today}|812|2|SE ENVIA BLASTER Y MENSAJE SOLICITANDO EL PAGO HOY|62341|62341`;
+      } else {
+        return `${c1}|${today}|812|2|SE ENVIA BLASTER Y MENSAJE SOLICITANDO EL PAGO HOY|61384|61384`;
+      }
+    });
+  }
+
+  function chunk(arr, size) {
+    const out = [];
+    for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+    return out;
+  }
+
+  function processFile(file) {
+    if (!file.name.match(/\.(xlsx|xls)$/i)) {
+      showStatus('❌ Solo se aceptan archivos .xlsx o .xls', 'error'); return;
+    }
+    fileNameEl.textContent = '📄 ' + file.name;
+    fileNameEl.style.display = 'block';
+    statusEl.style.display = 'none';
+
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      try {
+        const wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
+        sheetsData['61384'] = [];
+        sheetsData['62341'] = [];
+        const today = getToday();
+        let found = [];
+
+        for (const sName of wb.SheetNames) {
+          const key = sName.trim();
+          if (key !== '61384' && key !== '62341') continue;
+          found.push(key);
+          const raw  = XLSX.utils.sheet_to_json(wb.Sheets[sName], { header: 1, defval: '' });
+          const rows = raw.slice(1).filter(r => String(r[0] ?? '').trim() !== '');
+          sheetsData[key] = buildLines(rows, key, today);
+        }
+
+        if (!found.length) {
+          showStatus('⚠ No se encontraron hojas 61384 ni 62341 en el Excel.', 'error'); return;
+        }
+
+        renderResults(today);
+        resultsCard.classList.remove('hidden');
+
+        const total = sheetsData['61384'].length + sheetsData['62341'].length;
+        showStatus(`✓ Listo — ${found.join(' + ')} — ${total} registros totales`, 'success');
+
+      } catch(err) {
+        showStatus('❌ Error al leer el archivo: ' + err.message, 'error');
+        console.error(err);
+      }
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function renderResults(today) {
+    const dateTag = (today || getToday()).replace(/\//g, '');
+
+    for (const id of ['61384', '62341']) {
+      const lines    = sheetsData[id];
+      const statEl   = document.getElementById(`stat${id}`);
+      const filesEl  = document.getElementById(`files${id}`);
+      const toggleEl = document.getElementById(`toggle${id}`);
+      const blockEl  = document.getElementById(`block${id}`);
+      const prevEl   = document.getElementById(`preview${id}`);
+
+      if (!lines.length) {
+        statEl.textContent = 'No encontrada';
+        filesEl.innerHTML  = '<div class="empty-state">No encontrada en el Excel</div>';
+        toggleEl.style.display = 'none';
+        blockEl.className  = 'sheet-block';
+        continue;
+      }
+
+      blockEl.className  = `sheet-block active-${id}`;
+      statEl.textContent = `${lines.length} filas`;
+
+      const parts = chunk(lines, MAX_ROWS);
+      filesEl.innerHTML = '';
+
+      parts.forEach((part, idx) => {
+        const suffix = parts.length > 1 ? `_p${idx + 1}` : '';
+        const fname  = `blaster_${id}${suffix}_${dateTag}.txt`;
+        const content = part.join('\n');
+
+        const item = document.createElement('div');
+        item.className = 'file-item';
+        item.innerHTML = `
+          <span class="file-item-name" title="${fname}">📄 ${fname}</span>
+          <span class="file-item-rows">${part.length} filas</span>
+          <button class="btn-dl btn-dl-${id}" data-content="${encodeURIComponent(content)}" data-fname="${fname}">⬇ TXT</button>
+        `;
+        filesEl.appendChild(item);
+      });
+
+      // wire download buttons
+      filesEl.querySelectorAll('.btn-dl').forEach(btn => {
+        btn.addEventListener('click', () => {
+          downloadTxt(decodeURIComponent(btn.dataset.content), btn.dataset.fname);
+        });
+      });
+
+      prevEl.textContent = lines.slice(0, 5).join('\n');
+      toggleEl.style.display = 'block';
+    }
+  }
+
+  function togglePreview(id) {
+    const box = document.getElementById(`preview${id}`);
+    const btn = document.getElementById(`toggle${id}`);
+    const open = box.style.display === 'block';
+    box.style.display = open ? 'none' : 'block';
+    btn.textContent   = open ? '▶ ver muestra' : '▼ ocultar muestra';
+  }
+
+  function downloadTxt(content, filename) {
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url; a.download = filename; a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    sheetsData['61384'] = [];
+    sheetsData['62341'] = [];
+    fileInput.value = '';
+    fileNameEl.style.display = 'none';
+    statusEl.style.display   = 'none';
+    resultsCard.classList.add('hidden');
+    ['61384','62341'].forEach(id => {
+      document.getElementById(`preview${id}`).style.display = 'none';
+      document.getElementById(`toggle${id}`).textContent = '▶ ver muestra';
+    });
+  });
+</script>
+</body>
+</html>
