@@ -431,7 +431,7 @@
 
       parts.forEach((part, idx) => {
         const suffix = parts.length > 1 ? `_p${idx + 1}` : '';
-        const fname  = `${suffix}${id}_${dateTag}.txt`;
+        const fname  = `${id}${suffix}_${dateTag}.txt`;
         const content = part.join('\n');
 
         const item = document.createElement('div');
