@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Generador Blaster</title>
+<title>Gestiones</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;600&display=swap');
@@ -258,7 +258,7 @@
 <div class="container">
   <header>
     <div class="label-tag">Herramienta</div>
-    <h1>Generador <span>Gestion</span></h1>
+    <h1>Gestiones <span></span></h1>
     <p class="subtitle">Genera TXT separados por hoja · delimitado por | · máx. 2,000 filas por archivo</p>
   </header>
 
@@ -347,7 +347,7 @@
     return rows.map(row => {
       const c1 = String(row[0] ?? '').trim();
       if (sheetId === '62341') {
-        return `${c1}|${today}|812|2|SE ENVIA BLASTER Y MENSAJE SOLICITANDO EL PAGO HOY|62341|62341`;
+        return `${c1}|${today}|812|2|SE ENVIA  Y MENSAJE SOLICITANDO EL PAGO HOY|62341|62341`;
       } else {
         return `${c1}|${today}|812|2|SE ENVIA BLASTER Y MENSAJE SOLICITANDO EL PAGO HOY|61384|61384`;
       }
@@ -431,7 +431,7 @@
 
       parts.forEach((part, idx) => {
         const suffix = parts.length > 1 ? `_p${idx + 1}` : '';
-        const fname  = `blaster_${id}${suffix}_${dateTag}.txt`;
+        const fname  = `${suffix}${id}_${dateTag}.txt`;
         const content = part.join('\n');
 
         const item = document.createElement('div');
